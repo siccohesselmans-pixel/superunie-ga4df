@@ -44,7 +44,7 @@ const config = {
   // on a new or full build, this start date will be picked
   ENABLED: true,
   VERSION: 1,
-  GA4_START_DATE: "2020-01-01",
+  GA4_START_DATE: "2026-04-07",
 
   // custom definitions
   // a very complete list of all recommended and standard event parameters is

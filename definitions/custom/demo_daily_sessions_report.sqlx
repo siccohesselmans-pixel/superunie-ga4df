@@ -21,7 +21,7 @@
 
 config {
     type: "table",
-    schema: dataform.projectConfig.vars.OUTPUTS_DATASET,
+    schema: dataform.projectConfig.vars.REPORTING_DATASET,
     description: "Daily session aggregate table - can be used for LP report, marketing, etc",
     bigquery: {
         partitionBy: "session_date",
