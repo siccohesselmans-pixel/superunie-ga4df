@@ -44,7 +44,7 @@ const config = {
   // on a new or full build, this start date will be picked
   ENABLED: true,
   VERSION: 1,
-  GA4_START_DATE: "2026-04-17",
+  GA4_START_DATE: "2026-04-07",
 
   // custom definitions
   // a very complete list of all recommended and standard event parameters is
@@ -73,7 +73,7 @@ const config = {
   // ],
   CUSTOM_EVENT_PARAMS_ARRAY: [
     { name: "page_type", type: "string" },
-    { name: "recipe_name", type: "string" }
+    { name: "recipe_name", type: "string" },
     { name: "banner_group", type: "string" },
     { name: "banner_location", type: "string" },
     { name: "banner_type", type: "string" },
