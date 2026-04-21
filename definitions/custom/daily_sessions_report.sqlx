@@ -74,7 +74,9 @@ WITH source_sessions_aggregation AS (
     COUNTIF(e.event_name = 'promotion_click') AS promotion_click,
     COUNTIF(e.event_name = 'gam_slot_render') AS gam_slot_render,
     COUNTIF(e.event_name = 'gam_impression_viewable') AS gam_impression_viewable,
-    COUNTIF(e.event_name = 'view_search_results') AS view_search_results
+    COUNTIF(e.event_name = 'view_search_results') AS view_search_results,
+
+    s.time.engagement_time_msec
 
   FROM ${ref("ga4_sessions")} AS s
   LEFT JOIN ${ref("ga4_events")} AS e
@@ -137,7 +139,9 @@ final_daily_aggregation AS (
     COUNT(DISTINCT IF(promotion_click > 0, session_id, NULL)) AS promotion_click_sessions,
     COUNT(DISTINCT IF(gam_slot_render > 0, session_id, NULL)) AS gam_slot_render_sessions,
     COUNT(DISTINCT IF(gam_impression_viewable > 0, session_id, NULL)) AS gam_impression_viewable_sessions,
-    COUNT(DISTINCT transaction_id) AS transactions
+    COUNT(DISTINCT transaction_id) AS transactions,
+
+    SUM(engagement_time_msec) AS engagement_time_msec
 
   FROM source_sessions_aggregation
   GROUP BY ALL
