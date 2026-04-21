@@ -1,12 +1,13 @@
 defaultAssertionDataset: superform_assertion
 defaultLocation: EU
-defaultProject: dataform-package
+defaultProject: boodschappen-data
 vars:
-  GA4_DATASET: analytics_31337
-  LOCAL_TIMEZONE: Europe/Paris
-  QUALITY_DATASET: superform_quality_31337
-  TRANSFORMATIONS_DATASET: superform_transformations_31337
-  OUTPUTS_DATASET: superform_outputs_31337
+  GA4_DATASET: analytics_522533558
+  LOCAL_TIMEZONE: Europe/Amsterdam
+  QUALITY_DATASET: df_quality
+  TRANSFORMATIONS_DATASET: df_transformations
+  OUTPUTS_DATASET: df_outputs
+  REPORTING_DATASET: ga4_reports
   LABEL_GENERIC_BRAND: superformlabs # constant
   LABEL_GENERIC_TOOL: ga4dataform # constant for now...
   LABEL_GENERIC_LICENSE_TYPE: core # core or premium

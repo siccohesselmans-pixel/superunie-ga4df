@@ -1,0 +1,92 @@
+/*
+	This file is part of "GA4 Dataform Package".
+	Copyright (C) 2023-2026 Superform Labs <support@superformlabs.eu>
+	Artem Korneev, Jules Stuifbergen,
+	Johan van de Werken, Krisztián Korpa,
+	Simon Breton
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, version 3 of the License.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License in the LICENSE.txt file for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+
+config {
+    type: "table",
+    schema: dataform.projectConfig.vars.REPORTING_DATASET,
+    description: "Daily pages aggregate table - pageviews per page/page_type",
+    bigquery: {
+        partitionBy: "event_date",
+        clusterBy: ["page_path", "page_type"],
+        labels: require("includes/core/helpers.js").helpers.storageLabels()
+    },
+}
+
+js {
+  const { helpers } = require("includes/core/helpers");
+}
+
+pre_operations {
+  set @@query_label = "${helpers.executionLabels()}"
+}
+
+WITH page_views AS (
+
+  SELECT
+    event_date,
+    page.path AS page_path,
+    COALESCE(event_params_custom.page_type, '(not set)') AS page_type,
+    device.category AS device_category,
+    geo.country,
+    platform,
+    stream_id,
+
+    COUNT(DISTINCT session_id) AS sessions,
+    COUNT(DISTINCT user_pseudo_id) AS users,
+    COUNT(DISTINCT IF(event_params.ga_session_number = 1, user_pseudo_id, NULL)) AS users_new,
+    COUNT(DISTINCT IF(event_params.ga_session_number > 1, user_pseudo_id, NULL)) AS users_returning,
+    COUNTIF(event_name = 'page_view') AS page_view,
+    COUNTIF(event_params.ga_session_number = 1) AS page_view_new,
+    COUNTIF(event_params.ga_session_number > 1) AS page_view_returning
+
+  FROM ${ref("ga4_events")}
+  WHERE event_name = 'page_view'
+  GROUP BY ALL
+
+),
+
+engagement AS (
+
+  SELECT
+    event_date,
+    page.path AS page_path,
+    COALESCE(event_params_custom.page_type, '(not set)') AS page_type,
+    device.category AS device_category,
+    geo.country,
+    platform,
+    stream_id,
+
+    SUM(event_params.engagement_time_msec) AS engagement_time_msec
+
+  FROM ${ref("ga4_events")}
+  WHERE page.path IS NOT NULL
+    AND event_params.engagement_time_msec IS NOT NULL
+  GROUP BY ALL
+
+)
+
+SELECT
+  pv.*,
+  COALESCE(e.engagement_time_msec, 0) AS engagement_time_msec
+
+FROM page_views AS pv
+LEFT JOIN engagement AS e
+  USING (event_date, page_path, page_type, device_category, country, platform, stream_id)

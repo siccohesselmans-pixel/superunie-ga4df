@@ -70,12 +70,13 @@ WITH source_sessions_aggregation AS (
     e.ecommerce.transaction_id,
 
     COUNTIF(e.event_name = 'page_view') AS page_view,
-    COUNTIF(e.event_name = 'view_item') AS view_item,
-    COUNTIF(e.event_name = 'add_to_cart') AS add_to_cart,
-    COUNTIF(e.event_name = 'begin_checkout') AS begin_checkout,
-    COUNTIF(e.event_name = 'purchase') AS purchase,
+    COUNTIF(e.event_name = 'promotion_in_viewport') AS promotion_in_viewport,
+    COUNTIF(e.event_name = 'promotion_click') AS promotion_click,
+    COUNTIF(e.event_name = 'gam_slot_render') AS gam_slot_render,
+    COUNTIF(e.event_name = 'gam_impression_viewable') AS gam_impression_viewable,
     COUNTIF(e.event_name = 'view_search_results') AS view_search_results,
-    SUM(e.ecommerce.purchase_revenue) AS revenue
+
+    s.time.engagement_time_msec
 
   FROM ${ref("ga4_sessions")} AS s
   LEFT JOIN ${ref("ga4_events")} AS e
@@ -83,10 +84,10 @@ WITH source_sessions_aggregation AS (
       s.session_id = e.session_id
       AND e.event_name IN (
         'page_view',
-        'view_item',
-        'add_to_cart',
-        'begin_checkout',
-        'purchase',
+        'promotion_in_viewport',
+        'promotion_click',
+        'gam_slot_render',
+        'gam_impression_viewable',
         'view_search_results'
       )
   GROUP BY ALL
@@ -127,19 +128,20 @@ final_daily_aggregation AS (
     COUNT(DISTINCT session_id) AS sessions,
     COUNT(DISTINCT IF(is_engaged_session, session_id, NULL)) AS engaged_sessions,
 
-    SUM(revenue) AS revenue,
     SUM(page_view) AS page_view,
-    SUM(view_item) AS view_item,
-    SUM(add_to_cart) AS add_to_cart,
-    SUM(begin_checkout) AS begin_checkout,
-    SUM(purchase) AS purchase,
+    SUM(promotion_in_viewport) AS promotion_in_viewport,
+    SUM(promotion_click) AS promotion_click,
+    SUM(gam_slot_render) AS gam_slot_render,
+    SUM(gam_impression_viewable) AS gam_impression_viewable,
     SUM(view_search_results) AS view_search_results,
 
-    COUNT(DISTINCT IF(view_item > 0, session_id, NULL)) AS view_item_sessions,
-    COUNT(DISTINCT IF(add_to_cart > 0, session_id, NULL)) AS add_to_cart_sessions,
-    COUNT(DISTINCT IF(begin_checkout > 0, session_id, NULL)) AS begin_checkout_sessions,
-    COUNT(DISTINCT IF(purchase > 0, session_id, NULL)) AS purchase_sessions,
-    COUNT(DISTINCT transaction_id) AS transactions
+    COUNT(DISTINCT IF(promotion_in_viewport > 0, session_id, NULL)) AS promotion_in_viewport_sessions,
+    COUNT(DISTINCT IF(promotion_click > 0, session_id, NULL)) AS promotion_click_sessions,
+    COUNT(DISTINCT IF(gam_slot_render > 0, session_id, NULL)) AS gam_slot_render_sessions,
+    COUNT(DISTINCT IF(gam_impression_viewable > 0, session_id, NULL)) AS gam_impression_viewable_sessions,
+    COUNT(DISTINCT transaction_id) AS transactions,
+
+    SUM(engagement_time_msec) AS engagement_time_msec
 
   FROM source_sessions_aggregation
   GROUP BY ALL
