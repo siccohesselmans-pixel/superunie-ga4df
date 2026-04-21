@@ -74,6 +74,9 @@ WITH source_ga4_export AS (
 
     -- filters go here
 
+    -- consent filter: alleen events met analytics consent
+    AND privacy_info.analytics_storage = 'Yes'
+
     -- intraday filter: exclude
     AND CONTAINS_SUBSTR(_table_suffix, 'intraday') IS FALSE
     -- fresh filter: exclude
