@@ -1,0 +1,92 @@
+/*
+	This file is part of "GA4 Dataform Package".
+	Copyright (C) 2023-2026 Superform Labs <support@superformlabs.eu>
+	Artem Korneev, Jules Stuifbergen,
+	Johan van de Werken, Krisztián Korpa,
+	Simon Breton
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, version 3 of the License.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License in the LICENSE.txt file for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+
+config {
+    type: "table",
+    schema: dataform.projectConfig.vars.REPORTING_DATASET,
+    tags: ["ga4"],
+    description: "Daily promotion aggregate table - promotion_in_viewport & promotion_click per banner/recipe",
+    bigquery: {
+        partitionBy: "event_date",
+        clusterBy: ["page_path", "banner_group", "banner_location"],
+        labels: require("includes/core/helpers.js").helpers.storageLabels()
+    },
+}
+
+js {
+  const { helpers } = require("includes/core/helpers");
+}
+
+pre_operations {
+  set @@query_label = "${helpers.executionLabels()}"
+}
+
+WITH promotion_events AS (
+
+  SELECT
+    e.event_date,
+    e.page.path AS page_path,
+    COALESCE(e.event_params_custom.banner_group, '(not set)') AS banner_group,
+    COALESCE(e.event_params_custom.banner_location, '(not set)') AS banner_location,
+    COALESCE(e.event_params_custom.banner_type, '(not set)') AS banner_type,
+    COALESCE(e.event_params_custom.recipe_name, '(not set)') AS recipe_name,
+    COALESCE(e.event_params_custom.sponsored, '(not set)') AS sponsored,
+    e.device.category AS device_category,
+    e.geo.country,
+    e.platform,
+    e.stream_id,
+    COALESCE(s.last_non_direct_traffic_source.default_channel_grouping, '(not set)') AS session_default_channel_grouping,
+
+    e.session_id,
+    e.user_pseudo_id,
+    e.event_name
+
+  FROM ${ref("ga4_events")} AS e
+  LEFT JOIN ${ref("ga4_sessions")} AS s
+    ON e.session_id = s.session_id
+  WHERE e.event_name IN ('promotion_in_viewport', 'promotion_click')
+
+)
+
+SELECT
+  event_date,
+  page_path,
+  banner_group,
+  banner_location,
+  banner_type,
+  recipe_name,
+  sponsored,
+  device_category,
+  country,
+  platform,
+  stream_id,
+  session_default_channel_grouping,
+
+  COUNTIF(event_name = 'promotion_in_viewport') AS promotion_in_viewport,
+  COUNT(DISTINCT IF(event_name = 'promotion_in_viewport', session_id, NULL)) AS promotion_in_viewport_sessions,
+  COUNT(DISTINCT IF(event_name = 'promotion_in_viewport', user_pseudo_id, NULL)) AS promotion_in_viewport_users,
+
+  COUNTIF(event_name = 'promotion_click') AS promotion_click,
+  COUNT(DISTINCT IF(event_name = 'promotion_click', session_id, NULL)) AS promotion_click_sessions,
+  COUNT(DISTINCT IF(event_name = 'promotion_click', user_pseudo_id, NULL)) AS promotion_click_users
+
+FROM promotion_events
+GROUP BY ALL

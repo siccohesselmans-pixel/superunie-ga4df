@@ -22,6 +22,7 @@
 config {
     type: "table",
     schema: dataform.projectConfig.vars.REPORTING_DATASET,
+    tags: ["ga4"],
     description: "Daily pages aggregate table - pageviews per page/page_type",
     bigquery: {
         partitionBy: "event_date",
