@@ -142,6 +142,10 @@ const getDefaultChannelGroupingSQL = (
         ) 
         then 'Direct'
       when 
+        regexp_contains(${medium}, r"qr-code")
+        and regexp_contains(${source}, r"magazine")
+        then 'Magazine QR'
+      when 
         (
           regexp_contains(${source}, r"^(${config.SOCIAL_PLATFORMS_REGEX})$")
           or ${category} = 'SOURCE_CATEGORY_SOCIAL'
